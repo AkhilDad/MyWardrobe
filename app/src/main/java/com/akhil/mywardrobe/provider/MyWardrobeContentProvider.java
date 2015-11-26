@@ -66,7 +66,7 @@ public class MyWardrobeContentProvider extends ContentProvider {
                 throw new IllegalArgumentException("Unknown URI: " + uri);
         }
 
-        cursor = queryBuilder.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+        cursor = queryBuilder.query(db, projection, selection, selectionArgs, null, null, " RANDOM()");
 
         // Make sure that potential listeners are getting notified
         if (cursor != null)

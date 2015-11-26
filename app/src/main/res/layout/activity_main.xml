@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
-        android:src="@drawable/ic_action_favorite"/>
+        android:src="@drawable/selector_fav"/>
 
     <ImageView
         android:id="@+id/iv_refresh"
@@ -61,7 +61,8 @@
         android:id="@+id/tv_err_shirts"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_above="@+id/iv_fav"
+        android:layout_above="@+id/iv_refresh"
+        android:layout_alignParentTop="true"
         android:gravity="center"
         android:visibility="gone"/>
 
@@ -69,7 +70,8 @@
         android:id="@+id/tv_err_pants"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_below="@+id/iv_fav"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/iv_refresh"
         android:gravity="center"
         android:visibility="gone"/>
 

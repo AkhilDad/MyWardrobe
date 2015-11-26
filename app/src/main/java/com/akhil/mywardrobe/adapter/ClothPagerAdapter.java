@@ -18,14 +18,16 @@ import com.akhil.mywardrobe.helper.ImageHelper;
  */
 public class ClothPagerAdapter extends PagerAdapter {
 
+    private final int mResId;
     private Cursor mCursor;
     private LayoutInflater mLayoutInflater;
     private Context mContext;
 
-    public ClothPagerAdapter(Context context, Cursor cursor) {
+    public ClothPagerAdapter(Context context, Cursor cursor, int resId) {
         mLayoutInflater = LayoutInflater.from(context);
         mCursor = cursor;
         mContext = context;
+        mResId = resId;
     }
 
     @Override
@@ -45,7 +47,7 @@ public class ClothPagerAdapter extends PagerAdapter {
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
-        View view = mLayoutInflater.inflate(R.layout.row_cloth_item, container, false);
+        View view = mLayoutInflater.inflate(mResId, container, false);
         ImageView imageView = (ImageView)view.findViewById(R.id.iv_cloth_image);
         if (mCursor.moveToPosition(position)) {
             String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MyWardrobeDatabase.Column.IMAGE_PATH));
@@ -60,5 +62,9 @@ public class ClothPagerAdapter extends PagerAdapter {
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
         container.removeView(container.findViewById(R.id.ll_container));
+    }
+
+    public Cursor getCursor() {
+        return mCursor;
     }
 }
