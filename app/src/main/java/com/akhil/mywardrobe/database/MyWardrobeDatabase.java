@@ -20,18 +20,9 @@ import java.lang.reflect.Constructor;
 /**
  * This class is used to perform all the database operations
  * such as saving, deleting and updating data used in this application
- * @author Lipika 
  */
 public class MyWardrobeDatabase extends SQLiteOpenHelper
 {
-	public interface DEFAULTVALUES {
-		String ACCOUNT_PASSWORD 		=	"12345";
-		String ACCOUNT_TYPE		 		=	"0";
-		String UPDATED_TIMESTAP 		= 	"-1";
-	}
-
-
-
 	private static MyWardrobeDatabase sAppDbHelper;
 	public static final String DATABASE_NAME = "expensedb";
 	private static final int DATABASE_VERSION = 1;

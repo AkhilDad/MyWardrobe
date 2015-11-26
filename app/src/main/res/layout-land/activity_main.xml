@@ -57,4 +57,21 @@
         android:layout_alignParentTop="true"
         android:src="@drawable/ic_action_new"/>
 
+    <TextView
+        android:id="@+id/tv_err_shirts"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_toLeftOf="@+id/iv_refresh"
+        android:gravity="center"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/tv_err_pants"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_toRightOf="@+id/iv_refresh"
+        android:gravity="center"
+        android:visibility="gone"/>
+
+
 </RelativeLayout>

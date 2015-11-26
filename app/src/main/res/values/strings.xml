@@ -4,4 +4,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="pick_image_intent_text">Choose Image</string>
+    <string name="err_add_more_shirts">Try Adding more shirts</string>
+    <string name="err_add_more_pants">Try adding more pants</string>
 </resources>

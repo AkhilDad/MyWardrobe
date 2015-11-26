@@ -195,9 +195,5 @@ public class ImagePicker {
         return bm;
     }
 
-    private static String saveImage(Bitmap  bitmap) {
-        String savedPath = null;
-//        TODO: save bitmap to storage directory
-        return null;
-    }
+
 }

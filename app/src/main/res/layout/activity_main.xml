@@ -6,7 +6,8 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
         <android.support.v4.view.ViewPager
             android:id="@+id/vp_shirts"
@@ -30,8 +31,8 @@
         android:id="@+id/iv_fav"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
         android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
         android:src="@drawable/ic_action_favorite"/>
 
     <ImageView
@@ -55,5 +56,22 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:src="@drawable/ic_action_new"/>
+
+    <TextView
+        android:id="@+id/tv_err_shirts"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_above="@+id/iv_fav"
+        android:gravity="center"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/tv_err_pants"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_below="@+id/iv_fav"
+        android:gravity="center"
+        android:visibility="gone"/>
+
 
 </RelativeLayout>

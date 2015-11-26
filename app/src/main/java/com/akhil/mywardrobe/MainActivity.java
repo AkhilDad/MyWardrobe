@@ -1,18 +1,25 @@
 package com.akhil.mywardrobe;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.akhil.mywardrobe.adapter.ClothPagerAdapter;
+import com.akhil.mywardrobe.database.MyWardrobeDatabase;
+import com.akhil.mywardrobe.helper.ImageHelper;
 import com.akhil.mywardrobe.helper.ImagePicker;
 import com.akhil.mywardrobe.provider.MyWardrobeContentProvider;
 
@@ -24,7 +31,8 @@ public class MainActivity extends AppCompatActivity implements android.support.v
 
     private static final int SHIRTS_LOADER = 0;
     private static final int PANTS_LOADER = 1;
-    private static final int PICK_IMAGE_ID = 234; // any random number
+    private static final int PICK_IMAGE_ID_SHIRTS = 101; // any random number
+    private static final int PICK_IMAGE_ID_PANTS = 102;
 
     @Bind(R.id.vp_shirts)
     protected ViewPager mShirtsVP;
@@ -41,6 +49,12 @@ public class MainActivity extends AppCompatActivity implements android.support.v
     @Bind(R.id.iv_fav)
     protected ImageView mFavIV;
 
+    @Bind(R.id.tv_err_pants)
+    protected TextView mPantsErrorTV;
+
+    @Bind(R.id.tv_err_shirts)
+    protected TextView mShirtsErrorTV;
+
     @OnClick(R.id.iv_refresh)
     public void onRefreshClicked() {
 
@@ -48,12 +62,12 @@ public class MainActivity extends AppCompatActivity implements android.support.v
 
     @OnClick(R.id.iv_add_pants)
     public void onAddShirtsClicked() {
-        onPickImage();
+        onPickImage(PICK_IMAGE_ID_PANTS);
     }
 
     @OnClick(R.id.iv_add_shirts)
     public void onAddPantsClicked() {
-        onPickImage();
+        onPickImage(PICK_IMAGE_ID_SHIRTS);
     }
 
     @OnClick(R.id.iv_fav)
@@ -69,8 +83,8 @@ public class MainActivity extends AppCompatActivity implements android.support.v
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        mShirtsPagerAdapter = new ClothPagerAdapter(null);
-        mPantsPagerAdapter = new ClothPagerAdapter(null);
+        mShirtsPagerAdapter = new ClothPagerAdapter(getApplicationContext(), null);
+        mPantsPagerAdapter = new ClothPagerAdapter(getApplicationContext(), null);
 
         mShirtsVP.setAdapter(mShirtsPagerAdapter);
         mPantsVP.setAdapter(mPantsPagerAdapter);
@@ -117,13 +131,35 @@ public class MainActivity extends AppCompatActivity implements android.support.v
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        Log.e("data--->"+(data != null ? data.getCount() : 0),"-------"+loader.getId());
         switch (loader.getId()) {
             case PANTS_LOADER :
                 mPantsPagerAdapter.swapCursor(data);
+                mPantsPagerAdapter.notifyDataSetChanged();
                 break;
             case SHIRTS_LOADER :
                 mShirtsPagerAdapter.swapCursor(data);
+                mShirtsPagerAdapter.notifyDataSetChanged();
                 break;
+        }
+        checkForNoData();
+    }
+
+    private void checkForNoData() {
+        mFavIV.setEnabled(true);
+        mShirtsErrorTV.setVisibility(View.GONE);
+        mPantsErrorTV.setVisibility(View.GONE);
+
+        if (mShirtsPagerAdapter.getCount() <= 0 ) {
+            mFavIV.setEnabled(false);
+            mShirtsErrorTV.setText(R.string.err_add_more_shirts);
+            mShirtsErrorTV.setVisibility(View.VISIBLE);
+        }
+
+        if (mPantsPagerAdapter.getCount() <= 0 ) {
+            mFavIV.setEnabled(false);
+            mPantsErrorTV.setText(R.string.err_add_more_pants);
+            mPantsErrorTV.setVisibility(View.VISIBLE);
         }
     }
 
@@ -142,9 +178,14 @@ public class MainActivity extends AppCompatActivity implements android.support.v
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
-            case PICK_IMAGE_ID:
+            case PICK_IMAGE_ID_PANTS:
+            case PICK_IMAGE_ID_SHIRTS:
                 Bitmap bitmap = ImagePicker.getImageFromResult(this, resultCode, data);
-                // TODO store bitmap and save path in db
+                String path = ImageHelper.saveImage(getApplicationContext(), bitmap);
+                if (path != null) {
+                    storeImageInDb(requestCode == PICK_IMAGE_ID_PANTS ? MyWardrobeContentProvider.CONTENT_URI_PANTS : MyWardrobeContentProvider.CONTENT_URI_SHIRTS, path);
+                }
+
                 break;
             default:
                 super.onActivityResult(requestCode, resultCode, data);
@@ -152,8 +193,14 @@ public class MainActivity extends AppCompatActivity implements android.support.v
         }
     }
 
-    public void onPickImage() {
+    private void storeImageInDb(Uri uri, String path) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MyWardrobeDatabase.Column.IMAGE_PATH, path);
+        getContentResolver().insert(uri, contentValues);
+    }
+
+    public void onPickImage(int reqCode) {
         Intent chooseImageIntent = ImagePicker.getPickImageIntent(this);
-        startActivityForResult(chooseImageIntent, PICK_IMAGE_ID);
+        startActivityForResult(chooseImageIntent, reqCode);
     }
 }
