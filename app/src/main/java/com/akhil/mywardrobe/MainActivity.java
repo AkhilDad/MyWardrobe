@@ -20,9 +20,13 @@ import android.widget.TextView;
 import com.akhil.mywardrobe.adapter.ClothPagerAdapter;
 import com.akhil.mywardrobe.database.MyWardrobeDatabase;
 import com.akhil.mywardrobe.database.MyWardrobeDatabase.Column;
+import com.akhil.mywardrobe.helper.AlarmHelper;
 import com.akhil.mywardrobe.helper.ImageHelper;
 import com.akhil.mywardrobe.helper.ImagePicker;
 import com.akhil.mywardrobe.provider.MyWardrobeContentProvider;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -55,16 +59,28 @@ public class MainActivity extends AppCompatActivity implements android.support.v
     @Bind(R.id.tv_err_pants)
     protected TextView mPantsErrorTV;
 
+    @Bind(R.id.iv_refresh)
+    protected ImageView mRefreshIV;
+
     @Bind(R.id.tv_err_shirts)
     protected TextView mShirtsErrorTV;
 
     private int mCurrentShirtPosition;
     private int mCurrentPantPosition;
-    private String mCurrentPantPath;
-    private String mCurrentShirtPath;
+
+    private List<String> mShirtsPathList;
+    private List<String> mPantsPathList;
+    private boolean mIsShirtReset ;
+    private boolean mIsPantsReset;
 
     @OnClick(R.id.iv_refresh)
     public void onRefreshClicked() {
+        mRefreshIV.setImageResource(R.drawable.ic_action_refresh);
+        mRefreshIV.setEnabled(false);
+        mShirtsVP.setAdapter(mShirtsPagerAdapter);
+        mPantsVP.setAdapter(mPantsPagerAdapter);
+        getSupportLoaderManager().restartLoader(PANTS_LOADER, null, this);
+        getSupportLoaderManager().restartLoader(SHIRTS_LOADER, null, this);
 
     }
 
@@ -81,11 +97,13 @@ public class MainActivity extends AppCompatActivity implements android.support.v
     @OnClick(R.id.iv_fav)
     public void onFavClicked() {
         View v = mFavIV;
+        String mCurrentShirtPath = mShirtsPathList.get(mCurrentShirtPosition);
+        String mCurrentPantPath = mPantsPathList.get(mCurrentPantPosition);
         Log.e("Before On Fav clicked","---->"+v.isSelected());
         ContentValues contentValues = new ContentValues();
         contentValues.put(Column.SHIRT_PATH, mCurrentShirtPath);
         contentValues.put(Column.PANT_PATH, mCurrentPantPath);
-        if(v.isSelected()) {
+        if(!v.isSelected()) {
             getContentResolver().insert(MyWardrobeContentProvider.CONTENT_URI_FAVOURITE, contentValues);
         } else {
             getContentResolver().delete(MyWardrobeContentProvider.CONTENT_URI_FAVOURITE, Column.SHIRT_PATH + " = ? AND " + Column.PANT_PATH + " = ?", new String[]{mCurrentShirtPath, mCurrentPantPath});
@@ -102,16 +120,17 @@ public class MainActivity extends AppCompatActivity implements android.support.v
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        mShirtsPathList = new ArrayList<>();
+        mPantsPathList = new ArrayList<>();
         mShirtsPagerAdapter = new ClothPagerAdapter(getApplicationContext(), null, R.layout.row_shirt_item);
         mPantsPagerAdapter = new ClothPagerAdapter(getApplicationContext(), null, R.layout.row_pant_item);
 
-        mShirtsVP.setAdapter(mShirtsPagerAdapter);
-        mPantsVP.setAdapter(mPantsPagerAdapter);
 
+        mRefreshIV.setImageResource(R.drawable.ic_action_accept);
         getSupportLoaderManager().initLoader(PANTS_LOADER, null, this);
         getSupportLoaderManager().initLoader(SHIRTS_LOADER, null, this);
-        getSupportLoaderManager().initLoader(FAVOURITES_LOADER, null, this);
-
+        mShirtsVP.setAdapter(mShirtsPagerAdapter);
+        mPantsVP.setAdapter(mPantsPagerAdapter);
         mShirtsVP.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -147,39 +166,25 @@ public class MainActivity extends AppCompatActivity implements android.support.v
 
             }
         });
-
+        AlarmHelper.setAlarm(getApplicationContext());
     }
 
     private void handleFavourite() {
-        Cursor mShirtsCursor = mShirtsPagerAdapter.getCursor();
-        Cursor mPantsCursor = mPantsPagerAdapter.getCursor();
-
-        if (mShirtsCursor != null && mShirtsCursor.moveToPosition(mCurrentShirtPosition)) {
-            mCurrentShirtPath = mShirtsCursor.getString(mShirtsCursor.getColumnIndexOrThrow(Column.IMAGE_PATH));
-        } else {
-            mCurrentShirtPath = null;
-            mFavIV.setVisibility(View.GONE);
-            return;
-        }
-
-        if (mPantsCursor != null && mPantsCursor.moveToPosition(mCurrentPantPosition)) {
-            mCurrentPantPath = mPantsCursor.getString(mShirtsCursor.getColumnIndexOrThrow(Column.IMAGE_PATH));
-        } else {
-            mCurrentPantPath = null;
-            mFavIV.setVisibility(View.GONE);
-            return;
-        }
-
         mFavIV.setSelected(checkIfFavourite());
         mFavIV.setVisibility(View.VISIBLE);
     }
 
     private boolean checkIfFavourite() {
-        Cursor cursor = getContentResolver().query(MyWardrobeContentProvider.CONTENT_URI_FAVOURITE, new String[]{MyWardrobeDatabase.Column._ID}, Column.SHIRT_PATH + " = ? AND " + Column.PANT_PATH + " = ?", new String[]{mCurrentShirtPath, mCurrentPantPath}, null);
+        boolean isFav = false;
+        Cursor cursor = getContentResolver().query(MyWardrobeContentProvider.CONTENT_URI_FAVOURITE, new String[]{MyWardrobeDatabase.Column._ID}, Column.SHIRT_PATH + " = ? AND " + Column.PANT_PATH + " = ?", new String[]{mShirtsPathList.get(mCurrentShirtPosition), mPantsPathList.get(mCurrentPantPosition)}, null);
         if (cursor != null && cursor.moveToFirst()) {
-            return cursor.getCount() > 0;
+            Log.e("----->","----->"+cursor.getCount());
+            isFav = cursor.getCount() > 0;
         }
-        return false;
+        if (cursor != null) {
+            cursor.close();
+        }
+        return isFav;
     }
 
     @Override
@@ -222,22 +227,48 @@ public class MainActivity extends AppCompatActivity implements android.support.v
         Log.e("data--->"+(data != null ? data.getCount() : 0),"-------"+loader.getId());
         switch (loader.getId()) {
             case PANTS_LOADER :
-                mPantsPagerAdapter.swapCursor(data);
-                mPantsPagerAdapter.notifyDataSetChanged();
+                mIsPantsReset = true;
+                iterateCursorAndFillListForPants(data, mPantsPathList);
+                Cursor cursor = mPantsPagerAdapter.swapCursor(data);
+                if (cursor != null) {
+                    cursor.close();
+                }
                 break;
             case SHIRTS_LOADER :
-                mShirtsPagerAdapter.swapCursor(data);
-                mShirtsPagerAdapter.notifyDataSetChanged();
-                break;
-            case FAVOURITES_LOADER :
-//                mShirtsPagerAdapter.swapCursor(data);
-//                mShirtsPagerAdapter.notifyDataSetChanged();
+                iterateCursorAndFillListForShirts(data, mShirtsPathList);
+                cursor = mShirtsPagerAdapter.swapCursor(data);
+                if (cursor != null) {
+                    cursor.close();
+                }
+                mIsShirtReset = true;
                 break;
         }
+        Log.e("Pant reset =>"+mIsPantsReset, "Shirt Reset ->"+mIsShirtReset);
+        if (mIsPantsReset && mIsShirtReset) {
+            mRefreshIV.setImageResource(R.drawable.ic_action_accept);
+            mRefreshIV.setEnabled(true);
+        }
+
         checkForNoData();
     }
 
-    private void checkForNoData() {
+    private void iterateCursorAndFillListForShirts(Cursor cursor, List<String> pathList) {
+        if (cursor.moveToFirst()) {
+            do {
+                pathList.add(cursor.getString(cursor.getColumnIndexOrThrow(Column.IMAGE_PATH)));
+            } while (cursor.moveToNext());
+        }
+    }
+
+    private void iterateCursorAndFillListForPants(Cursor cursor, List<String> pathList) {
+        if (cursor.moveToFirst()) {
+            do {
+                pathList.add(cursor.getString(cursor.getColumnIndexOrThrow(Column.IMAGE_PATH)));
+            } while (cursor.moveToNext());
+        }
+    }
+
+    private synchronized void checkForNoData() {
         mFavIV.setVisibility(View.VISIBLE);
         mShirtsErrorTV.setVisibility(View.GONE);
         mPantsErrorTV.setVisibility(View.GONE);
@@ -246,22 +277,29 @@ public class MainActivity extends AppCompatActivity implements android.support.v
             mShirtsErrorTV.setText(R.string.err_add_more_shirts);
             mShirtsErrorTV.setVisibility(View.VISIBLE);
             mFavIV.setVisibility(View.GONE);
+            return;
         }
 
         if (mPantsPagerAdapter.getCount() <= 0 ) {
             mPantsErrorTV.setText(R.string.err_add_more_pants);
             mPantsErrorTV.setVisibility(View.VISIBLE);
             mFavIV.setVisibility(View.GONE);
+            return;
         }
+
     }
 
     @Override
     public void onLoaderReset(Loader loader) {
         switch (loader.getId()) {
             case PANTS_LOADER :
+                mIsPantsReset = false;
+                mPantsPathList.clear();
                 mPantsPagerAdapter.swapCursor(null);
                 break;
             case SHIRTS_LOADER :
+                mIsShirtReset = false;
+                mShirtsPathList.clear();
                 mShirtsPagerAdapter.swapCursor(null);
                 break;
         }
@@ -269,19 +307,21 @@ public class MainActivity extends AppCompatActivity implements android.support.v
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch(requestCode) {
-            case PICK_IMAGE_ID_PANTS:
-            case PICK_IMAGE_ID_SHIRTS:
-                Bitmap bitmap = ImagePicker.getImageFromResult(this, resultCode, data);
-                String path = ImageHelper.saveImage(getApplicationContext(), bitmap);
-                if (path != null) {
-                    storeImageInDb(requestCode == PICK_IMAGE_ID_PANTS ? MyWardrobeContentProvider.CONTENT_URI_PANTS : MyWardrobeContentProvider.CONTENT_URI_SHIRTS, path);
-                }
-
-                break;
-            default:
-                super.onActivityResult(requestCode, resultCode, data);
-                break;
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case PICK_IMAGE_ID_PANTS:
+                case PICK_IMAGE_ID_SHIRTS:
+                    Bitmap bitmap = ImagePicker.getImageFromResult(this, resultCode, data);
+                    String path = ImageHelper.saveImage(getApplicationContext(), bitmap);
+                    if (path != null) {
+                        storeImageInDb(requestCode == PICK_IMAGE_ID_PANTS ? MyWardrobeContentProvider.CONTENT_URI_PANTS : MyWardrobeContentProvider.CONTENT_URI_SHIRTS, path);
+                        onRefreshClicked();
+                    }
+                    break;
+                default:
+                    super.onActivityResult(requestCode, resultCode, data);
+                    break;
+            }
         }
     }
 

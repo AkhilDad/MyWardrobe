@@ -8,6 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.akhil.mywardrobe.R;
 import com.akhil.mywardrobe.database.MyWardrobeDatabase;
@@ -40,20 +42,25 @@ public class ClothPagerAdapter extends PagerAdapter {
         return view == object;
     }
 
-    public void swapCursor(Cursor data) {
+    public Cursor swapCursor(Cursor data) {
+        Cursor cursor = mCursor;
         mCursor = data;
         notifyDataSetChanged();
+        return cursor;
     }
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
         View view = mLayoutInflater.inflate(mResId, container, false);
         ImageView imageView = (ImageView)view.findViewById(R.id.iv_cloth_image);
-        if (mCursor.moveToPosition(position)) {
+        Log.e("instantiateItem-->","position -> "+position);
+        if (!mCursor.isClosed() && mCursor.moveToPosition(position)) {
             String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MyWardrobeDatabase.Column.IMAGE_PATH));
             Log.e("Path-->"+path,ImageHelper.getImageFromPath(mContext, path)+"position -> "+position);
             imageView.setImageBitmap(ImageHelper.getImageFromPath(mContext, path));
             imageView.setBackgroundResource(R.drawable.ic_action_favorite);
+        } else {
+            Log.e("************", "*****Cursor closed******");
         }
         container.addView(view);
         return view;
@@ -61,10 +68,6 @@ public class ClothPagerAdapter extends PagerAdapter {
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
-        container.removeView(container.findViewById(R.id.ll_container));
-    }
-
-    public Cursor getCursor() {
-        return mCursor;
+        container.removeView((RelativeLayout)object);
     }
 }
